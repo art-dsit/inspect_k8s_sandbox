@@ -22,6 +22,7 @@ from inspect_ai.util import (
     sandboxenv,
 )
 from kubernetes.client.exceptions import ApiException
+from urllib3.exceptions import NewConnectionError
 from pydantic import BaseModel, TypeAdapter
 from tenacity import retry_if_exception, stop_after_attempt, wait_exponential_jitter
 from tenacity.asyncio import AsyncRetrying
@@ -60,6 +61,7 @@ MIN_DESIRED_SOFT = 100000
 
 _TRANSIENT_TYPES = (
     ApiException,
+    NewConnectionError,
     websocket.WebSocketException,
     ConnectionError,
     OSError,

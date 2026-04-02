@@ -119,18 +119,34 @@ class _Config:
         try:
             config.load_incluster_config()
             logger.info("Loaded in-cluster Kubernetes configuration.")
+            cls._disable_urllib3_retry()
             return _Config(contexts=None, current_context=None, in_cluster=True)
         except ConfigException:
             pass
 
         # Fall back to kubeconfig file.
         config.load_kube_config()
+        cls._disable_urllib3_retry()
         contexts, current = config.list_kube_config_contexts()
         typed_contexts = cast(list[_KubeContext], contexts)
         typed_current = cast(_KubeContext | None, current)
         return _Config(
             contexts=typed_contexts, current_context=typed_current, in_cluster=False
         )
+
+    @staticmethod
+    def _disable_urllib3_retry() -> None:
+        """Disable urllib3's built-in retry so tenacity owns the retry strategy.
+
+        Without this, urllib3 retries connection errors internally (3 attempts
+        with backoff, ~90s total) before raising MaxRetryError. Setting
+        retries=False makes connection failures propagate immediately as the
+        original exception (e.g. ConnectionRefusedError), which tenacity in
+        _sandbox_environment.py can then retry with its own backoff.
+        """
+        default_config = client.Configuration.get_default_copy()
+        default_config.retries = False
+        client.Configuration.set_default(default_config)
 
     @classmethod
     def ensure_loaded(cls) -> None:
