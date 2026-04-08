@@ -1,0 +1,7 @@
+# Minimal values for the E2E two-cluster test.
+# Uses runc instead of gvisor to avoid needing the gVisor addon.
+services:
+  default:
+    runtimeClassName: runc
+    image: "python:3.12-bookworm"
+    command: ["tail", "-f", "/dev/null"]
